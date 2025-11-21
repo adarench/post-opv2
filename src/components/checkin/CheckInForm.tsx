@@ -117,122 +117,166 @@ export function CheckInForm() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-text-primary p-6">
-      <div className="max-w-lg mx-auto">
-        <h1 className="text-2xl font-medium mb-8">Daily Check-in</h1>
+    <div className="min-h-screen bg-background text-text-primary flex flex-col">
+      {/* Terminal Header */}
+      <header className="h-14 bg-surface border-b border-border flex items-center px-4">
+        <div className="font-mono text-sm tracking-tight text-text-secondary">
+          POST-OP MONITORING SYSTEM v2.0 / PATIENT CHECK-IN
+        </div>
+      </header>
 
-        {error && (
-          <div className="mb-6 p-4 rounded bg-risk-red/10 text-risk-red">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Pain Scale */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              Pain Level (0-10)
-            </label>
-            <input
-              type="range"
-              min="0"
-              max="10"
-              value={answers.pain}
-              onChange={(e) => setAnswers(prev => ({
-                ...prev,
-                pain: parseInt(e.target.value, 10)
-              }))}
-              className="w-full"
-            />
-            <div className="text-center font-mono">{answers.pain}</div>
+      {/* Check-in Console */}
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          {/* System Status */}
+          <div className="mb-8 font-mono text-sm">
+            <div className="flex items-center space-x-2 text-text-secondary">
+              <span className="w-2 h-2 rounded-full bg-brand animate-pulse"></span>
+              <span>READY TO RECORD</span>
+            </div>
           </div>
 
-          {/* Swelling */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              Swelling
-            </label>
-            <select
-              value={answers.swelling}
-              onChange={(e) => setAnswers(prev => ({
-                ...prev,
-                swelling: e.target.value as SwellingLevel
-              }))}
-              className="w-full bg-surface-dark rounded px-3 py-2 border border-surface"
-            >
-              <option value="none">None</option>
-              <option value="slight">Slight</option>
-              <option value="moderate">Moderate</option>
-              <option value="severe">Severe</option>
-            </select>
+          {/* Check-in Terminal */}
+          <div className="bg-surface border border-border rounded-lg shadow-inner-subtle overflow-hidden">
+            <div className="px-4 py-3 bg-surface-dark border-b border-border">
+              <div className="font-mono text-sm text-text-secondary">DAILY STATUS CHECK</div>
+            </div>
+
+            <div className="p-6">
+              {error && (
+                <div className="mb-6 font-mono text-sm text-risk-red bg-risk-red/5 border border-risk-red/10 rounded px-3 py-2">
+                  {error}
+                </div>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-6">
+                {/* Pain Scale */}
+                <div className="space-y-3">
+                  <label className="block font-mono text-sm text-text-secondary">
+                    PAIN LEVEL
+                  </label>
+                  <div className="flex items-center space-x-4">
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      value={answers.pain}
+                      onChange={(e) => setAnswers(prev => ({
+                        ...prev,
+                        pain: parseInt(e.target.value, 10)
+                      }))}
+                      className="flex-1"
+                    />
+                    <div className="w-12 h-12 flex items-center justify-center rounded bg-surface-dark border border-border">
+                      <span className="font-mono text-xl">{answers.pain}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Vital Signs Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Swelling */}
+                  <div className="space-y-2">
+                    <label className="block font-mono text-sm text-text-secondary">
+                      SWELLING
+                    </label>
+                    <select
+                      value={answers.swelling}
+                      onChange={(e) => setAnswers(prev => ({
+                        ...prev,
+                        swelling: e.target.value as SwellingLevel
+                      }))}
+                      className="w-full bg-surface-dark rounded px-3 py-2 border border-border font-mono text-sm"
+                    >
+                      <option value="none">NONE</option>
+                      <option value="slight">SLIGHT</option>
+                      <option value="moderate">MODERATE</option>
+                      <option value="severe">SEVERE</option>
+                    </select>
+                  </div>
+
+                  {/* Bleeding */}
+                  <div className="space-y-2">
+                    <label className="block font-mono text-sm text-text-secondary">
+                      BLEEDING
+                    </label>
+                    <select
+                      value={answers.bleeding}
+                      onChange={(e) => setAnswers(prev => ({
+                        ...prev,
+                        bleeding: e.target.value as BleedingLevel
+                      }))}
+                      className="w-full bg-surface-dark rounded px-3 py-2 border border-border font-mono text-sm"
+                    >
+                      <option value="none">NONE</option>
+                      <option value="spotting">SPOTTING</option>
+                      <option value="persistent">PERSISTENT</option>
+                      <option value="large_clots">LARGE CLOTS</option>
+                    </select>
+                  </div>
+
+                  {/* Numbness */}
+                  <div className="space-y-2">
+                    <label className="block font-mono text-sm text-text-secondary">
+                      NUMBNESS
+                    </label>
+                    <select
+                      value={answers.numbness}
+                      onChange={(e) => setAnswers(prev => ({
+                        ...prev,
+                        numbness: e.target.value as NumbnessLevel
+                      }))}
+                      className="w-full bg-surface-dark rounded px-3 py-2 border border-border font-mono text-sm"
+                    >
+                      <option value="none">NONE</option>
+                      <option value="improving">IMPROVING</option>
+                      <option value="same">SAME AS BEFORE</option>
+                      <option value="worse">GETTING WORSE</option>
+                      <option value="new_areas">NEW AREAS</option>
+                    </select>
+                  </div>
+
+                  {/* Medications */}
+                  <div className="space-y-2">
+                    <label className="block font-mono text-sm text-text-secondary">
+                      MEDICATIONS
+                    </label>
+                    <div className="h-[38px] flex items-center">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={answers.meds}
+                          onChange={(e) => setAnswers(prev => ({
+                            ...prev,
+                            meds: e.target.checked
+                          }))}
+                          className="rounded border-border"
+                        />
+                        <span className="font-mono text-sm">
+                          TAKING AS PRESCRIBED
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full mt-6 py-2 bg-brand/10 border border-brand/20 rounded text-brand text-sm font-mono hover:bg-brand/20 transition-colors duration-100"
+                >
+                  SUBMIT CHECK-IN
+                </button>
+              </form>
+            </div>
           </div>
 
-          {/* Bleeding */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              Bleeding
-            </label>
-            <select
-              value={answers.bleeding}
-              onChange={(e) => setAnswers(prev => ({
-                ...prev,
-                bleeding: e.target.value as BleedingLevel
-              }))}
-              className="w-full bg-surface-dark rounded px-3 py-2 border border-surface"
-            >
-              <option value="none">None</option>
-              <option value="spotting">Spotting</option>
-              <option value="persistent">Persistent</option>
-              <option value="large_clots">Large Clots</option>
-            </select>
+          {/* System Info */}
+          <div className="mt-8 font-mono text-xs text-text-secondary space-y-1">
+            <div>CONNECTION: SECURE</div>
+            <div>RISK ENGINE: READY</div>
+            <div>ALERT SYSTEM: ACTIVE</div>
           </div>
-
-          {/* Numbness */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium">
-              Numbness
-            </label>
-            <select
-              value={answers.numbness}
-              onChange={(e) => setAnswers(prev => ({
-                ...prev,
-                numbness: e.target.value as NumbnessLevel
-              }))}
-              className="w-full bg-surface-dark rounded px-3 py-2 border border-surface"
-            >
-              <option value="none">None</option>
-              <option value="improving">Improving</option>
-              <option value="same">Same as Before</option>
-              <option value="worse">Getting Worse</option>
-              <option value="new_areas">New Areas</option>
-            </select>
-          </div>
-
-          {/* Medications */}
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                checked={answers.meds}
-                onChange={(e) => setAnswers(prev => ({
-                  ...prev,
-                  meds: e.target.checked
-                }))}
-                className="rounded border-surface"
-              />
-              <span className="text-sm font-medium">
-                I am taking my medications as prescribed
-              </span>
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            className="w-full py-3 rounded bg-brand hover:bg-brand/90 text-white font-medium"
-          >
-            Submit Check-in
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );
