@@ -1,3 +1,7 @@
+export type SwellingLevel = 'none' | 'slight' | 'moderate' | 'severe';
+export type BleedingLevel = 'none' | 'spotting' | 'persistent' | 'large_clots';
+export type NumbnessLevel = 'none' | 'improving' | 'same' | 'worse' | 'new_areas';
+
 export type RiskLevel = 'green' | 'yellow' | 'red';
 export type RiskTag = 'RISK_PAIN_SPIKE' | 'RISK_BLEEDING' | 'RISK_FEVER' | 'RISK_SWELLING_WORSE';
 export type CheckInStatus = 'new' | 'in_review' | 'resolved';
@@ -16,6 +20,7 @@ export interface Patient {
   riskLevel: RiskLevel;
   riskTags: RiskTag[];
   lastCheckIn: Date;
+  needsVisit: boolean;
 }
 
 export interface CheckIn {

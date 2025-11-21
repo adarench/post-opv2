@@ -7,11 +7,24 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   return (
-    <div className="min-h-screen bg-background text-text-primary">
+    <div className="min-h-screen flex flex-col bg-background text-text-primary">
+      {/* Command Bar - System Status & Controls */}
       <CommandBar />
-      <main className="container mx-auto px-4 py-6">
-        {children}
-      </main>
+
+      {/* Main Console Surface */}
+      <div className="flex-1 flex">
+        {/* Main Monitoring Surface - Patient Feed */}
+        <main className="flex-1 min-h-0 p-4 bg-surface-gradient">
+          <div className="h-full overflow-auto">
+            {children}
+          </div>
+        </main>
+
+        {/* Context Panel - Detail View */}
+        <aside className="w-96 border-l border-border bg-surface shadow-inner-subtle overflow-y-auto">
+          {/* Context panel content will be rendered by individual views */}
+        </aside>
+      </div>
     </div>
   );
 }

@@ -1,34 +1,119 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { doc, setDoc } from '@firebase/firestore';
+import { useNavigate, useParams } from 'react-router-dom';
+import { doc, getDoc, updateDoc } from '@firebase/firestore';
 import { db } from '../../config/firebase';
-import { CheckIn } from '../../types/models';
+import { CheckIn, RiskLevel, RiskTag, SwellingLevel, BleedingLevel, NumbnessLevel } from '../../types/models';
 
-interface CheckInFormProps {
-  checkInId: string;
+interface CheckInAnswers {
+  pain: number;
+  swelling: SwellingLevel;
+  bleeding: BleedingLevel;
+  numbness: NumbnessLevel;
+  meds: boolean;
 }
 
-export function CheckInForm({ checkInId }: CheckInFormProps) {
+const initialAnswers: CheckInAnswers = {
+  pain: 0,
+  swelling: 'none',
+  bleeding: 'none',
+  numbness: 'none',
+  meds: true,
+};
+
+function updateRiskLevel(current: RiskLevel, newLevel: RiskLevel): RiskLevel {
+  if (current === 'red' || newLevel === 'red') return 'red';
+  if (current === 'yellow' || newLevel === 'yellow') return 'yellow';
+  return 'green';
+}
+
+function calculateRisk(answers: CheckInAnswers, previousAnswers?: CheckInAnswers): { level: RiskLevel; tags: RiskTag[] } {
+  const tags: RiskTag[] = [];
+  let riskLevel: RiskLevel = 'green';
+
+  // Pain assessment
+  if (answers.pain >= 8) {
+    riskLevel = updateRiskLevel(riskLevel, 'red');
+    tags.push('RISK_PAIN_SPIKE');
+  } else if (previousAnswers && answers.pain >= previousAnswers.pain + 3) {
+    riskLevel = updateRiskLevel(riskLevel, 'red');
+    tags.push('RISK_PAIN_SPIKE');
+  } else if (answers.pain >= 5 && answers.pain <= 7) {
+    riskLevel = updateRiskLevel(riskLevel, 'yellow');
+  }
+
+  // Swelling assessment
+  if (answers.swelling === 'severe') {
+    riskLevel = updateRiskLevel(riskLevel, 'red');
+    tags.push('RISK_SWELLING_WORSE');
+  } else if (answers.swelling === 'moderate' && previousAnswers?.swelling === 'slight') {
+    riskLevel = updateRiskLevel(riskLevel, 'yellow');
+    tags.push('RISK_SWELLING_WORSE');
+  }
+
+  // Bleeding assessment
+  if (answers.bleeding === 'persistent' || answers.bleeding === 'large_clots') {
+    riskLevel = updateRiskLevel(riskLevel, 'red');
+    tags.push('RISK_BLEEDING');
+  } else if (answers.bleeding === 'spotting') {
+    riskLevel = updateRiskLevel(riskLevel, 'yellow');
+  }
+
+  return { level: riskLevel, tags };
+}
+
+export function CheckInForm() {
+  const { checkInId } = useParams();
   const navigate = useNavigate();
-  const [answers, setAnswers] = useState({
-    pain: 0,
-    swelling: 'none',
-    bleeding: 'none',
-    numbness: 'none',
-    meds: true,
-  });
+  const [answers, setAnswers] = useState<CheckInAnswers>(initialAnswers);
+  const [error, setError] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!checkInId) return;
 
-    await setDoc(doc(db, 'checkins', checkInId), {
-      ...answers,
-      timestamp: new Date(),
-      handled: false,
-      notes: [],
-    } as Partial<CheckIn>);
+    try {
+      setError('');
+      const checkInRef = doc(db, 'checkins', checkInId);
+      const checkInDoc = await getDoc(checkInRef);
+      
+      if (!checkInDoc.exists()) {
+        throw new Error('Invalid check-in link');
+      }
 
-    navigate('/thank-you');
+      const patientId = checkInDoc.data().patientId;
+      const patientRef = doc(db, 'patients', patientId);
+      const patientDoc = await getDoc(patientRef);
+
+      if (!patientDoc.exists()) {
+        throw new Error('Patient not found');
+      }
+
+      // Calculate risk
+      const risk = calculateRisk(answers);
+
+      // Update check-in
+      await updateDoc(checkInRef, {
+        answers,
+        timestamp: new Date(),
+        riskLevel: risk.level,
+        riskTags: risk.tags,
+        handled: false,
+        notes: [],
+      });
+
+      // Update patient
+      await updateDoc(patientRef, {
+        lastCheckIn: new Date(),
+        riskLevel: risk.level,
+        riskTags: risk.tags,
+        updatedAt: new Date(),
+      });
+
+      navigate('/thank-you');
+    } catch (err) {
+      setError('Failed to submit check-in. Please try again.');
+      console.error('Error submitting check-in:', err);
+    }
   };
 
   return (
@@ -36,10 +121,16 @@ export function CheckInForm({ checkInId }: CheckInFormProps) {
       <div className="max-w-lg mx-auto">
         <h1 className="text-2xl font-medium mb-8">Daily Check-in</h1>
 
+        {error && (
+          <div className="mb-6 p-4 rounded bg-risk-red/10 text-risk-red">
+            {error}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Pain Scale */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
               Pain Level (0-10)
             </label>
             <input
@@ -49,25 +140,23 @@ export function CheckInForm({ checkInId }: CheckInFormProps) {
               value={answers.pain}
               onChange={(e) => setAnswers(prev => ({
                 ...prev,
-                pain: parseInt(e.target.value)
+                pain: parseInt(e.target.value, 10)
               }))}
               className="w-full"
             />
-            <div className="text-center font-mono mt-1">
-              {answers.pain}
-            </div>
+            <div className="text-center font-mono">{answers.pain}</div>
           </div>
 
           {/* Swelling */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
               Swelling
             </label>
             <select
               value={answers.swelling}
               onChange={(e) => setAnswers(prev => ({
                 ...prev,
-                swelling: e.target.value
+                swelling: e.target.value as SwellingLevel
               }))}
               className="w-full bg-surface-dark rounded px-3 py-2 border border-surface"
             >
@@ -79,15 +168,15 @@ export function CheckInForm({ checkInId }: CheckInFormProps) {
           </div>
 
           {/* Bleeding */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
               Bleeding
             </label>
             <select
               value={answers.bleeding}
               onChange={(e) => setAnswers(prev => ({
                 ...prev,
-                bleeding: e.target.value
+                bleeding: e.target.value as BleedingLevel
               }))}
               className="w-full bg-surface-dark rounded px-3 py-2 border border-surface"
             >
@@ -99,15 +188,15 @@ export function CheckInForm({ checkInId }: CheckInFormProps) {
           </div>
 
           {/* Numbness */}
-          <div>
-            <label className="block text-sm font-medium mb-2">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium">
               Numbness
             </label>
             <select
               value={answers.numbness}
               onChange={(e) => setAnswers(prev => ({
                 ...prev,
-                numbness: e.target.value
+                numbness: e.target.value as NumbnessLevel
               }))}
               className="w-full bg-surface-dark rounded px-3 py-2 border border-surface"
             >
@@ -120,7 +209,7 @@ export function CheckInForm({ checkInId }: CheckInFormProps) {
           </div>
 
           {/* Medications */}
-          <div>
+          <div className="space-y-2">
             <label className="flex items-center space-x-2">
               <input
                 type="checkbox"
