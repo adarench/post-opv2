@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "date-fns": "^4.1.0",
+    "react-router-dom": "^7.9.6"
+  },
+  "devDependencies": {
+    "@firebase/app-types": "^0.9.3",
+    "@firebase/firestore-types": "^3.0.3",
+    "@types/react": "^19.2.6",
+    "@types/react-dom": "^19.2.3"
+  }
+}

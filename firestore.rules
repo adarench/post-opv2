@@ -1,0 +1,40 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Staff authentication
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isStaff() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/staff/$(request.auth.uid));
+    }
+
+    // Patients collection
+    match /patients/{patientId} {
+      allow read: if isStaff();
+      allow write: if isStaff();
+    }
+
+    // Check-ins collection
+    match /checkins/{checkinId} {
+      allow read: if isStaff();
+      allow create: if true; // Allow check-in creation from tokenized links
+      allow update, delete: if isStaff();
+    }
+
+    // Protocols collection
+    match /protocols/{protocolId} {
+      allow read: if true; // Public read for check-in forms
+      allow write: if isStaff();
+    }
+
+    // Staff collection
+    match /staff/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId);
+      allow write: if false; // Admin only via console
+    }
+  }
+}
